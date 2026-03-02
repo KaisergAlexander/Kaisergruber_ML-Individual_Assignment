@@ -37,10 +37,12 @@ def feature_engineering(X):
         X['received_month']   = date_received.dt.month.astype(float)
         X['received_year']    = date_received.dt.year.astype(float)
         X['received_weekday'] = date_received.dt.dayofweek.astype(float)  # 0=Mon, 6=Sun
+        X['is_weekend']       = (date_received.dt.dayofweek >= 5).astype(float)
     else:
         X['received_month']   = np.nan
         X['received_year']    = np.nan
         X['received_weekday'] = np.nan
+        X['is_weekend']       = np.nan
 
     # ------------------------------------------------------------------
     # 2. Response time: calendar days from receipt to company assignment
@@ -49,27 +51,33 @@ def feature_engineering(X):
     if 'Date sent to company' in X.columns and 'Date received' in X.columns:
         date_sent = pd.to_datetime(X['Date sent to company'], errors='coerce')
         date_recv = pd.to_datetime(X['Date received'],        errors='coerce')
-        X['response_time_days'] = (date_sent - date_recv).dt.days.clip(lower=0).astype(float)
+        X['response_time_days']     = (date_sent - date_recv).dt.days.clip(lower=0).astype(float)
+        X['response_time_log']  = np.log1p(X['response_time_days'])
     else:
         X['response_time_days'] = np.nan
+        X['response_time_log']  = np.nan
 
     # Drop raw date columns — information captured in engineered features
     X = X.drop(columns=['Date received', 'Date sent to company'], errors='ignore')
 
     # ------------------------------------------------------------------
-    # 3. Narrative features: binary flag + character length
+    # 3. Narrative features: binary flag, character length, and log-length
     #    A longer narrative signals a more motivated, detail-oriented consumer
     #    who is more likely to escalate — richer than a simple presence flag.
+    #    Log-length compresses the heavy right-skew (some narratives are very
+    #    long) so the model can form better split thresholds.
     # ------------------------------------------------------------------
     if 'Consumer complaint narrative' in X.columns:
-        X['has_narrative']    = X['Consumer complaint narrative'].notna().astype(int)
-        X['narrative_length'] = (
+        X['has_narrative']        = X['Consumer complaint narrative'].notna().astype(int)
+        X['narrative_length']     = (
             X['Consumer complaint narrative'].fillna('').str.len().astype(float)
         )
+        X['narrative_length_log'] = np.log1p(X['narrative_length'])
         X = X.drop(columns=['Consumer complaint narrative'])
     else:
-        X['has_narrative']    = 0
-        X['narrative_length'] = 0.0
+        X['has_narrative']        = 0
+        X['narrative_length']     = 0.0
+        X['narrative_length_log'] = 0.0
 
     # ------------------------------------------------------------------
     # 4. Geographic region: first digit of ZIP code (0–9)

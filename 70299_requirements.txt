@@ -158,5 +158,6 @@ watchdog @ file:///C:/miniconda3/conda-bld/watchdog_1759775798728/work
 wcwidth==0.2.14
 wheel==0.45.1
 win_inet_pton @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/win_inet_pton_1729038644686/work
+xgboost==3.2.0
 xyzservices @ file:///C:/miniconda3/conda-bld/xyzservices_1758720211246/work
 zstandard @ file:///C:/b/abs_31t8xmrv_h/croot/zstandard_1731356578015/work

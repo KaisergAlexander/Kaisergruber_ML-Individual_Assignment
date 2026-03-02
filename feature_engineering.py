@@ -110,7 +110,27 @@ def feature_engineering(X):
         X['is_servicemember']  = 0
 
     # ------------------------------------------------------------------
-    # 6. Timely response: Yes → 1, anything else → 0
+    # 6. Company response quality: explicit binary flags
+    #    'Company response to consumer' is already retained as a categorical
+    #    feature (OHE). These dense binary flags reinforce the most important
+    #    response categories as direct numeric signals for the model.
+    #    — Q1.2 Insight 1 identified this as the strongest escalation driver.
+    # ------------------------------------------------------------------
+    if 'Company response to consumer' in X.columns:
+        resp = X['Company response to consumer'].fillna('').str.lower()
+        X['got_monetary_relief'] = resp.str.contains(
+            'monetary relief', na=False
+        ).astype(int)
+        X['got_any_relief'] = (
+            resp.str.contains('relief', na=False) &
+            ~resp.str.contains('without relief', na=False)
+        ).astype(int)
+    else:
+        X['got_monetary_relief'] = 0
+        X['got_any_relief']      = 0
+
+    # ------------------------------------------------------------------
+    # 7. Timely response: Yes → 1, anything else → 0
     # ------------------------------------------------------------------
     if 'Timely response?' in X.columns:
         X['timely_response'] = (X['Timely response?'] == 'Yes').astype(int)
@@ -119,7 +139,7 @@ def feature_engineering(X):
         X['timely_response'] = 0
 
     # ------------------------------------------------------------------
-    # 7. Drop identifier and non-predictive columns
+    # 8. Drop identifier and non-predictive columns
     #    'Consumer disputed?' is the target; it must never be a feature.
     # ------------------------------------------------------------------
     cols_to_drop = [
